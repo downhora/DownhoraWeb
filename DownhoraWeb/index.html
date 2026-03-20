@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redefinir Senha</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+
+    body {
+      background-color: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 380px;
+      padding: 25px;
+      text-align: center;
+    }
+
+    .logo {
+      width: 140px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background-color: #eaeaea;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input:focus {
+      border: 2px solid #2F5FB3;
+      background-color: #fff;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn-primary {
+      background-color: #F4B400;
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background-color: #e0a800;
+    }
+
+    @media (max-width: 400px) {
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+  
+    <img src="images/logo.jpeg" alt="Logo DownHora" class="logo">
+
+    <h2>Redefinir Senha</h2>
+
+    <form id="resetForm">
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Nova senha" required>
+      </div>
+
+      <div class="input-group">
+        <input type="password" id="confirmPassword" placeholder="Confirmar senha" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        Redefinir senha
+      </button>
+    </form>
+
+  </div>
+
+</body>
+</html>
