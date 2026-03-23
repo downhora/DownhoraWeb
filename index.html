@@ -10,7 +10,7 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Arial', sans-serif;
+      font-family: Arial, sans-serif;
     }
 
     body {
@@ -34,14 +34,8 @@
     }
 
     h2 {
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       color: #333;
-      font-weight: 600;
-    }
-
-    .input-group {
-      margin-bottom: 15px;
-      text-align: left;
     }
 
     input {
@@ -50,13 +44,13 @@
       border-radius: 12px;
       border: none;
       background-color: #eaeaea;
-      font-size: 14px;
+      margin-bottom: 12px;
       outline: none;
     }
 
     input:focus {
       border: 2px solid #2F5FB3;
-      background-color: #fff;
+      background: #fff;
     }
 
     .btn {
@@ -66,51 +60,192 @@
       border: none;
       font-size: 16px;
       font-weight: bold;
-      margin-top: 10px;
       cursor: pointer;
+      background-color: #F4B400;
       transition: 0.3s;
     }
 
-    .btn-primary {
-      background-color: #F4B400;
-      color: #000;
-    }
-
-    .btn-primary:hover {
+    .btn:hover {
       background-color: #e0a800;
     }
 
-    @media (max-width: 400px) {
-      .container {
-        padding: 20px;
-      }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .message {
+      margin-top: 15px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: red;
     }
   </style>
 </head>
 
 <body>
-
   <div class="container">
-  
-    <img src="images/logo.jpeg" alt="Logo DownHora" class="logo">
-
+    <img src="images/logo.jpeg" class="logo">
     <h2>Redefinir Senha</h2>
 
     <form id="resetForm">
-      <div class="input-group">
-        <input type="password" id="password" placeholder="Nova senha" required>
-      </div>
+      <input type="password" id="password" placeholder="Nova senha" required>
+      <input type="password" id="confirmPassword" placeholder="Confirmar senha" required>
 
-      <div class="input-group">
-        <input type="password" id="confirmPassword" placeholder="Confirmar senha" required>
-      </div>
-
-      <button type="submit" class="btn btn-primary">
+      <button type="submit" class="btn" id="submitBtn">
         Redefinir senha
       </button>
     </form>
 
+    <div id="message" class="message"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    console.log("Página carregada.");
+
+    const supabaseUrl = "https://ewoppvnwqagymvaqqijn.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3b3Bwdm53cWFneW12YXFxaWpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MDkxNzIsImV4cCI6MjA3MzE4NTE3Mn0.CddLYrDXnJ-3-n2HzC41xmx8KaUnpI_uvhXl8T-ApFc";
+
+    console.log("Criando cliente Supabase...");
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    console.log("Cliente Supabase criado com sucesso.");
+
+    const messageEl = document.getElementById("message");
+    const button = document.getElementById("submitBtn");
+
+    function showMessage(text, type) {
+      console.log("showMessage:", { text, type });
+      messageEl.style.display = "block";
+      messageEl.innerText = text;
+      messageEl.className = "message " + type;
+    }
+
+    async function handleRecovery() {
+      try {
+        console.log("Iniciando handleRecovery...");
+        console.log("URL completa:", window.location.href);
+        console.log("Hash recebido:", window.location.hash);
+        console.log("Search recebido:", window.location.search);
+
+        const hash = window.location.hash;
+
+        if (!hash) {
+          console.warn("Nenhum hash encontrado na URL.");
+          return;
+        }
+
+        const params = new URLSearchParams(hash.substring(1));
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+        const type = params.get("type");
+
+        console.log("Parâmetros capturados do hash:", {
+          hasAccessToken: !!access_token,
+          hasRefreshToken: !!refresh_token,
+          type
+        });
+
+        if (access_token && refresh_token) {
+          console.log("Tokens encontrados. Chamando supabaseClient.auth.setSession...");
+
+          const { data, error } = await supabaseClient.auth.setSession({
+            access_token,
+            refresh_token
+          });
+
+          if (error) {
+            console.error("Erro ao validar sessão de recuperação:", error);
+            showMessage("Erro ao validar sessão de recuperação: " + error.message, "error");
+            return;
+          }
+
+          console.log("Sessão definida com sucesso:", data);
+
+          const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+
+          if (sessionError) {
+            console.error("Erro ao buscar sessão após setSession:", sessionError);
+          } else {
+            console.log("Sessão atual após recovery:", sessionData);
+          }
+        } else {
+          console.warn("access_token ou refresh_token não encontrados no hash.");
+        }
+      } catch (err) {
+        console.error("Erro inesperado no handleRecovery:", err);
+        showMessage("Erro inesperado ao processar recuperação de senha.", "error");
+      }
+    }
+
+    handleRecovery();
+
+    document.getElementById("resetForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      console.log("Formulário enviado.");
+
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      console.log("Validando campos...");
+      console.log("Senha preenchida?", !!password);
+      console.log("Confirmar senha preenchida?", !!confirmPassword);
+      console.log("Senha e confirmação são iguais?", password === confirmPassword);
+      console.log("Tamanho da senha:", password.length);
+
+      if (password !== confirmPassword) {
+        console.warn("As senhas não coincidem.");
+        showMessage("As senhas não coincidem", "error");
+        return;
+      }
+
+      if (password.length < 6) {
+        console.warn("Senha com menos de 6 caracteres.");
+        showMessage("A senha deve ter pelo menos 6 caracteres", "error");
+        return;
+      }
+
+      try {
+        button.disabled = true;
+        button.innerText = "Atualizando...";
+        console.log("Chamando supabaseClient.auth.updateUser...");
+
+        const { data, error } = await supabaseClient.auth.updateUser({
+          password: password
+        });
+
+        if (error) {
+          console.error("Erro ao atualizar senha:", error);
+          showMessage("Erro: " + error.message, "error");
+          button.disabled = false;
+          button.innerText = "Redefinir senha";
+          return;
+        }
+
+        console.log("Senha atualizada com sucesso:", data);
+        showMessage("Senha redefinida com sucesso!", "success");
+
+        console.log("Redirecionando em 2 segundos...");
+        setTimeout(() => {
+          console.log("Redirecionando agora...");
+          window.location.href = "https://downhora.github.io/DownhoraWeb/";
+        }, 2000);
+      } catch (err) {
+        console.error("Erro inesperado no submit:", err);
+        showMessage("Erro inesperado ao redefinir senha.", "error");
+        button.disabled = false;
+        button.innerText = "Redefinir senha";
+      }
+    });
+  </script>
 </body>
 </html>
