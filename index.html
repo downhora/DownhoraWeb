@@ -146,6 +146,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+    let senhaAtualizada = false;
+
     console.log("Página carregada.");
 
     const supabaseUrl = "https://ewoppvnwqagymvaqqijn.supabase.co";
@@ -183,8 +185,10 @@
         const hash = window.location.hash;
 
         if (!hash) {
-          console.warn("Nenhum hash encontrado na URL.");
-          showMessage("Abra esta página pelo link enviado no e-mail de recuperação.", "error");
+          if (!senhaAtualizada){
+            console.warn("Nenhum hash encontrado na URL.");
+            showMessage("Abra esta página pelo link enviado no e-mail de recuperação.", "error");
+          }
           return;
         }
 
@@ -288,6 +292,7 @@
 
         console.log("Senha atualizada com sucesso:", data);
         showMessage("Senha redefinida com sucesso!", "success");
+        senhaAtualizada = true;
 
         console.log("Redirecionando em 2 segundos...");
         setTimeout(() => {
