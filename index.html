@@ -60,6 +60,11 @@
       background: #fff;
     }
 
+    input:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     .toggle-btn {
       position: absolute;
       right: 12px;
@@ -76,6 +81,11 @@
 
     .toggle-btn:hover {
       color: #2F5FB3;
+    }
+
+    .toggle-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .btn {
@@ -117,25 +127,25 @@
 
 <body>
   <div class="container">
-    <img src="images/logo.png" class="logo">
+    <img src="images/logo.png" class="logo" alt="Logo">
     <h2>Redefinir Senha</h2>
 
     <form id="resetForm">
       <div class="input-wrapper">
-        <input type="password" id="password" placeholder="Nova senha" required>
-        <button type="button" class="toggle-btn" onclick="togglePassword('password', this)">
+        <input type="password" id="password" placeholder="Nova senha" required disabled>
+        <button type="button" class="toggle-btn" id="togglePasswordBtn" onclick="togglePassword('password', this)" disabled>
           <span class="material-icons">visibility</span>
         </button>
       </div>
 
       <div class="input-wrapper">
-        <input type="password" id="confirmPassword" placeholder="Confirmar senha" required>
-        <button type="button" class="toggle-btn" onclick="togglePassword('confirmPassword', this)">
+        <input type="password" id="confirmPassword" placeholder="Confirmar senha" required disabled>
+        <button type="button" class="toggle-btn" id="toggleConfirmPasswordBtn" onclick="togglePassword('confirmPassword', this)" disabled>
           <span class="material-icons">visibility</span>
         </button>
       </div>
 
-      <button type="submit" class="btn" id="submitBtn">
+      <button type="submit" class="btn" id="submitBtn" disabled>
         Redefinir senha
       </button>
     </form>
@@ -147,6 +157,7 @@
 
   <script>
     let senhaAtualizada = false;
+    let recoveryValido = false;
 
     console.log("Página carregada.");
 
@@ -158,9 +169,16 @@
 
     const messageEl = document.getElementById("message");
     const button = document.getElementById("submitBtn");
+    const passwordInput = document.getElementById("password");
+    const confirmPasswordInput = document.getElementById("confirmPassword");
+    const togglePasswordBtn = document.getElementById("togglePasswordBtn");
+    const toggleConfirmPasswordBtn = document.getElementById("toggleConfirmPasswordBtn");
 
     function togglePassword(inputId, btn) {
       const input = document.getElementById(inputId);
+
+      if (input.disabled) return;
+
       const icon = btn.querySelector(".material-icons");
       const isHidden = input.type === "password";
 
@@ -175,6 +193,22 @@
       messageEl.className = "message " + type;
     }
 
+    function habilitarFormulario() {
+      passwordInput.disabled = false;
+      confirmPasswordInput.disabled = false;
+      button.disabled = false;
+      togglePasswordBtn.disabled = false;
+      toggleConfirmPasswordBtn.disabled = false;
+    }
+
+    function desabilitarFormulario() {
+      passwordInput.disabled = true;
+      confirmPasswordInput.disabled = true;
+      button.disabled = true;
+      togglePasswordBtn.disabled = true;
+      toggleConfirmPasswordBtn.disabled = true;
+    }
+
     async function handleRecovery() {
       try {
         console.log("Iniciando handleRecovery...");
@@ -185,8 +219,9 @@
         const hash = window.location.hash;
 
         if (!hash) {
-          if (!senhaAtualizada){
+          if (!senhaAtualizada) {
             console.warn("Nenhum hash encontrado na URL.");
+            desabilitarFormulario();
             showMessage("Abra esta página pelo link enviado no e-mail de recuperação.", "error");
           }
           return;
@@ -205,41 +240,51 @@
 
         if (type !== "recovery") {
           console.warn("Tipo de link inválido:", type);
+          desabilitarFormulario();
           showMessage("Link de recuperação inválido ou expirado.", "error");
           return;
         }
 
-        if (access_token && refresh_token) {
-          console.log("Tokens encontrados. Chamando supabaseClient.auth.setSession...");
-
-          const { data, error } = await supabaseClient.auth.setSession({
-            access_token,
-            refresh_token
-          });
-
-          if (error) {
-            console.error("Erro ao validar sessão de recuperação:", error);
-            showMessage("Erro ao validar sessão de recuperação: " + error.message, "error");
-            return;
-          }
-
-          console.log("Sessão definida com sucesso:", data);
-
-          const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-
-          if (sessionError) {
-            console.error("Erro ao buscar sessão após setSession:", sessionError);
-            showMessage("Erro ao obter sessão de recuperação.", "error");
-            return;
-          }
-
-          console.log("Sessão atual após recovery:", sessionData);
-        } else {
+        if (!access_token || !refresh_token) {
           console.warn("access_token ou refresh_token não encontrados no hash.");
+          desabilitarFormulario();
           showMessage("Link de recuperação inválido ou incompleto.", "error");
+          return;
         }
+
+        console.log("Tokens encontrados. Chamando supabaseClient.auth.setSession...");
+
+        const { data, error } = await supabaseClient.auth.setSession({
+          access_token,
+          refresh_token
+        });
+
+        if (error) {
+          console.error("Erro ao validar sessão de recuperação:", error);
+          desabilitarFormulario();
+          showMessage("Erro ao validar sessão de recuperação: " + error.message, "error");
+          return;
+        }
+
+        console.log("Sessão definida com sucesso:", data);
+
+        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+
+        if (sessionError || !sessionData?.session) {
+          console.error("Erro ao buscar sessão após setSession:", sessionError);
+          desabilitarFormulario();
+          showMessage("Erro ao obter sessão de recuperação.", "error");
+          return;
+        }
+
+        console.log("Sessão atual após recovery:", sessionData);
+
+        recoveryValido = true;
+        habilitarFormulario();
+
       } catch (err) {
         console.error("Erro inesperado no handleRecovery:", err);
+        desabilitarFormulario();
         showMessage("Erro inesperado ao processar recuperação de senha.", "error");
       }
     }
@@ -251,8 +296,14 @@
 
       console.log("Formulário enviado.");
 
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
+      if (!recoveryValido) {
+        console.warn("Tentativa de redefinição fora do fluxo de recovery.");
+        showMessage("Abra esta página somente pelo link enviado no e-mail de recuperação.", "error");
+        return;
+      }
+
+      const password = passwordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
 
       console.log("Validando campos...");
       console.log("Senha preenchida?", !!password);
@@ -291,14 +342,17 @@
         }
 
         console.log("Senha atualizada com sucesso:", data);
-        showMessage("Senha redefinida com sucesso!", "success");
         senhaAtualizada = true;
+        showMessage("Senha redefinida com sucesso!", "success");
+
+        desabilitarFormulario();
 
         console.log("Redirecionando em 2 segundos...");
         setTimeout(() => {
           console.log("Redirecionando agora...");
           window.location.href = "https://downhora.github.io/DownhoraWeb/";
         }, 2000);
+
       } catch (err) {
         console.error("Erro inesperado no submit:", err);
         showMessage("Erro inesperado ao redefinir senha.", "error");
