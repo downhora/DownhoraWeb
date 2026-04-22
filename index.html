@@ -146,293 +146,160 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    function togglePassword(inputId, btn) {
-      const input = document.getElementById(inputId);
-      const icon = btn.querySelector(".material-icons");
-      const isHidden = input.type === "password";
-      input.type = isHidden ? "text" : "password";
-      icon.textContent = isHidden ? "visibility_off" : "visibility";
-    }
+    console.log("Página carregada.");
 
-        console.log("Página carregada.");
-	
-    function togglePassword(inputId, btn) {
-
-	
-      const input = document.getElementById(inputId);
     const supabaseUrl = "https://ewoppvnwqagymvaqqijn.supabase.co";
-	
-      const icon = btn.querySelector(".material-icons");
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3b3Bwdm53cWFneW12YXFxaWpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MDkxNzIsImV4cCI6MjA3MzE4NTE3Mn0.CddLYrDXnJ-3-n2HzC41xmx8KaUnpI_uvhXl8T-ApFc";
-	
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    console.log("Cliente Supabase criado com sucesso.");
+
+    const messageEl = document.getElementById("message");
+    const button = document.getElementById("submitBtn");
+
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector(".material-icons");
       const isHidden = input.type === "password";
 
-	
       input.type = isHidden ? "text" : "password";
-    console.log("Criando cliente Supabase...");
-	
       icon.textContent = isHidden ? "visibility_off" : "visibility";
-    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-	
     }
-    console.log("Cliente Supabase criado com sucesso.");
-	
 
-
-	
-    // ... resto do seu código inalterado
-    const messageEl = document.getElementById("message");
-	
-    const button = document.getElementById("submitBtn");
-	
-
-	
     function showMessage(text, type) {
-	
       console.log("showMessage:", { text, type });
-	
       messageEl.style.display = "block";
-	
       messageEl.innerText = text;
-	
       messageEl.className = "message " + type;
-	
     }
-	
 
-	
     async function handleRecovery() {
-	
       try {
-	
         console.log("Iniciando handleRecovery...");
-	
         console.log("URL completa:", window.location.href);
-	
         console.log("Hash recebido:", window.location.hash);
-	
         console.log("Search recebido:", window.location.search);
-	
 
-	
         const hash = window.location.hash;
-	
 
-	
         if (!hash) {
-	
           console.warn("Nenhum hash encontrado na URL.");
-	
+          showMessage("Abra esta página pelo link enviado no e-mail de recuperação.", "error");
           return;
-	
         }
-	
 
-	
         const params = new URLSearchParams(hash.substring(1));
-	
         const access_token = params.get("access_token");
-	
         const refresh_token = params.get("refresh_token");
-	
         const type = params.get("type");
-	
 
-	
         console.log("Parâmetros capturados do hash:", {
-	
           hasAccessToken: !!access_token,
-	
           hasRefreshToken: !!refresh_token,
-	
           type
-	
         });
-	
 
-	
-        if (access_token && refresh_token) {
-	
-          console.log("Tokens encontrados. Chamando supabaseClient.auth.setSession...");
-	
-
-	
-          const { data, error } = await supabaseClient.auth.setSession({
-	
-            access_token,
-	
-            refresh_token
-	
-          });
-	
-
-	
-          if (error) {
-	
-            console.error("Erro ao validar sessão de recuperação:", error);
-	
-            showMessage("Erro ao validar sessão de recuperação: " + error.message, "error");
-	
-            return;
-	
-          }
-	
-
-	
-          console.log("Sessão definida com sucesso:", data);
-	
-
-	
-          const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-	
-
-	
-          if (sessionError) {
-	
-            console.error("Erro ao buscar sessão após setSession:", sessionError);
-	
-          } else {
-	
-            console.log("Sessão atual após recovery:", sessionData);
-	
-          }
-	
-        } else {
-	
-          console.warn("access_token ou refresh_token não encontrados no hash.");
-	
-        }
-	
-      } catch (err) {
-	
-        console.error("Erro inesperado no handleRecovery:", err);
-	
-        showMessage("Erro inesperado ao processar recuperação de senha.", "error");
-	
-      }
-	
-    }
-	
-
-	
-    handleRecovery();
-	
-
-	
-    document.getElementById("resetForm").addEventListener("submit", async (e) => {
-	
-      e.preventDefault();
-	
-
-	
-      console.log("Formulário enviado.");
-	
-
-	
-      const password = document.getElementById("password").value;
-	
-      const confirmPassword = document.getElementById("confirmPassword").value;
-	
-
-	
-      console.log("Validando campos...");
-	
-      console.log("Senha preenchida?", !!password);
-	
-      console.log("Confirmar senha preenchida?", !!confirmPassword);
-	
-      console.log("Senha e confirmação são iguais?", password === confirmPassword);
-	
-      console.log("Tamanho da senha:", password.length);
-	
-
-	
-      if (password !== confirmPassword) {
-	
-        console.warn("As senhas não coincidem.");
-	
-        showMessage("As senhas não coincidem", "error");
-	
-        return;
-	
-      }
-	
-
-	
-      if (password.length < 6) {
-	
-        console.warn("Senha com menos de 6 caracteres.");
-	
-        showMessage("A senha deve ter pelo menos 6 caracteres", "error");
-	
-        return;
-	
-      }
-	
-
-	
-      try {
-	
-        button.disabled = true;
-	
-        button.innerText = "Atualizando...";
-	
-        console.log("Chamando supabaseClient.auth.updateUser...");
-	
-
-	
-        const { data, error } = await supabaseClient.auth.updateUser({
-	
-          password: password
-	
-        });
-	
-
-	
-        if (error) {
-	
-          console.error("Erro ao atualizar senha:", error);
-	
-          showMessage("Erro: " + error.message, "error");
-	
-          button.disabled = false;
-	
-          button.innerText = "Redefinir senha";
-	
+        if (type !== "recovery") {
+          console.warn("Tipo de link inválido:", type);
+          showMessage("Link de recuperação inválido ou expirado.", "error");
           return;
-	
         }
-	
 
-	
-        console.log("Senha atualizada com sucesso:", data);
-	
-        showMessage("Senha redefinida com sucesso!", "success");
-	
+        if (access_token && refresh_token) {
+          console.log("Tokens encontrados. Chamando supabaseClient.auth.setSession...");
 
-	
-        console.log("Redirecionando em 2 segundos...");
-	
-        setTimeout(() => {
-	
-          console.log("Redirecionando agora...");
-	
-          window.location.href = "https://downhora.github.io/DownhoraWeb/";
-	
-        }, 2000);
-	
+          const { data, error } = await supabaseClient.auth.setSession({
+            access_token,
+            refresh_token
+          });
+
+          if (error) {
+            console.error("Erro ao validar sessão de recuperação:", error);
+            showMessage("Erro ao validar sessão de recuperação: " + error.message, "error");
+            return;
+          }
+
+          console.log("Sessão definida com sucesso:", data);
+
+          const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+
+          if (sessionError) {
+            console.error("Erro ao buscar sessão após setSession:", sessionError);
+            showMessage("Erro ao obter sessão de recuperação.", "error");
+            return;
+          }
+
+          console.log("Sessão atual após recovery:", sessionData);
+        } else {
+          console.warn("access_token ou refresh_token não encontrados no hash.");
+          showMessage("Link de recuperação inválido ou incompleto.", "error");
+        }
       } catch (err) {
-	
-        console.error("Erro inesperado no submit:", err);
-	
-        showMessage("Erro inesperado ao redefinir senha.", "error");
-	
-        button.disabled = false;
-	
-        button.innerText = "Redefinir senha";
-	
+        console.error("Erro inesperado no handleRecovery:", err);
+        showMessage("Erro inesperado ao processar recuperação de senha.", "error");
       }
-	
+    }
+
+    handleRecovery();
+
+    document.getElementById("resetForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      console.log("Formulário enviado.");
+
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      console.log("Validando campos...");
+      console.log("Senha preenchida?", !!password);
+      console.log("Confirmar senha preenchida?", !!confirmPassword);
+      console.log("Senha e confirmação são iguais?", password === confirmPassword);
+      console.log("Tamanho da senha:", password.length);
+
+      if (password !== confirmPassword) {
+        console.warn("As senhas não coincidem.");
+        showMessage("As senhas não coincidem", "error");
+        return;
+      }
+
+      if (password.length < 6) {
+        console.warn("Senha com menos de 6 caracteres.");
+        showMessage("A senha deve ter pelo menos 6 caracteres", "error");
+        return;
+      }
+
+      try {
+        button.disabled = true;
+        button.innerText = "Atualizando...";
+
+        console.log("Chamando supabaseClient.auth.updateUser...");
+
+        const { data, error } = await supabaseClient.auth.updateUser({
+          password: password
+        });
+
+        if (error) {
+          console.error("Erro ao atualizar senha:", error);
+          showMessage("Erro: " + error.message, "error");
+          button.disabled = false;
+          button.innerText = "Redefinir senha";
+          return;
+        }
+
+        console.log("Senha atualizada com sucesso:", data);
+        showMessage("Senha redefinida com sucesso!", "success");
+
+        console.log("Redirecionando em 2 segundos...");
+        setTimeout(() => {
+          console.log("Redirecionando agora...");
+          window.location.href = "https://downhora.github.io/DownhoraWeb/";
+        }, 2000);
+      } catch (err) {
+        console.error("Erro inesperado no submit:", err);
+        showMessage("Erro inesperado ao redefinir senha.", "error");
+        button.disabled = false;
+        button.innerText = "Redefinir senha";
+      }
     });
   </script>
 </body>
